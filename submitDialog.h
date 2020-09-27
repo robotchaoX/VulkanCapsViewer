@@ -23,7 +23,6 @@
 #pragma once
 #include <QDialog>
 #include <QLineEdit>
-#include "submitDialog.h"
 
 class submitDialog : public QDialog
 {
@@ -34,7 +33,7 @@ private:
 public:
 	std::string submitter;
 	std::string comment;
-	submitDialog(QString submitter, QWidget * parent = 0, Qt::WindowFlags f = 0);
+    submitDialog(QString submitter);
 	~submitDialog();
 	std::string getSubmitter();
 	std::string getComment();
