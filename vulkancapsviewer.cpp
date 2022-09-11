@@ -251,9 +251,15 @@ VulkanCapsViewer::VulkanCapsViewer(QWidget *parent)
     connectFilterAndModel(models.extensions, filterProxies.extensions);
     connect(ui.filterLineEditExtensions, SIGNAL(textChanged(QString)), this, SLOT(slotFilterExtensions(QString)));
     // Formats
-    ui.treeViewFormats->setModel(&filterProxies.formats);
-    connectFilterAndModel(models.formats, filterProxies.formats);
-    connect(ui.filterLineEditFormats, SIGNAL(textChanged(QString)), this, SLOT(slotFilterFormats(QString)));
+    ui.treeViewLinearFormats->setModel(&filterProxies.linearFormats);
+    connectFilterAndModel(models.linearFormats, filterProxies.linearFormats);
+    connect(ui.filterLineEditLinearFormats, SIGNAL(textChanged(QString)), this, SLOT(slotFilterLinearFormats(QString)));
+    ui.treeViewOptimalFormats->setModel(&filterProxies.optimalFormats);
+    connectFilterAndModel(models.optimalFormats, filterProxies.optimalFormats);
+    connect(ui.filterLineEditOptimalFormats, SIGNAL(textChanged(QString)), this, SLOT(slotFilterOptimalFormats(QString)));
+    ui.treeViewBufferFormats->setModel(&filterProxies.bufferFormats);
+    connectFilterAndModel(models.bufferFormats, filterProxies.bufferFormats);
+    connect(ui.filterLineEditBufferFormats, SIGNAL(textChanged(QString)), this, SLOT(slotFilterBufferFormats(QString)));
     // Profiles
     ui.treeViewDeviceProfiles->setModel(&filterProxies.profiles);
     connectFilterAndModel(models.profiles, filterProxies.profiles);
@@ -502,10 +508,22 @@ void VulkanCapsViewer::slotFilterExtensions(QString text)
     filterProxies.extensions.setFilterRegExp(regExp);
 }
 
-void VulkanCapsViewer::slotFilterFormats(QString text)
+void VulkanCapsViewer::slotFilterLinearFormats(QString text)
 {
     QRegExp regExp(text, Qt::CaseInsensitive, QRegExp::RegExp);
-    filterProxies.formats.setFilterRegExp(regExp);
+    filterProxies.linearFormats.setFilterRegExp(regExp);
+}
+
+void VulkanCapsViewer::slotFilterOptimalFormats(QString text)
+{
+    QRegExp regExp(text, Qt::CaseInsensitive, QRegExp::RegExp);
+    filterProxies.optimalFormats.setFilterRegExp(regExp);
+}
+
+void VulkanCapsViewer::slotFilterBufferFormats(QString text)
+{
+    QRegExp regExp(text, Qt::CaseInsensitive, QRegExp::RegExp);
+    filterProxies.bufferFormats.setFilterRegExp(regExp);
 }
 
 void VulkanCapsViewer::slotFilterProfiles(QString text)
@@ -1462,111 +1480,115 @@ void addFlagModelItem(QStandardItem *parent, QString flagName, bool flag)
 
 void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
 {
-    models.formats.clear();
-    QStandardItem *rootItem = models.formats.invisibleRootItem();
-    for (auto const &format : device->formats)
-    {
-        QList<QStandardItem *> rowItems;
-        rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(format.format)));
+    std::vector<VkFormatFeatureFlags> bufferFormats = {
+        VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,
+        VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+    };
 
-        std::vector<VkFormatFeatureFlags> featureFlags =
-        {
-            format.properties.linearTilingFeatures,
-            format.properties.optimalTilingFeatures,
-            format.properties.bufferFeatures
-        };
+    std::vector<VkFormatFeatureFlags> imageFormats = {
+        // Core
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
+        VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+        VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,
+        VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,
+        VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
+        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,
+        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_FORMAT_FEATURE_BLIT_SRC_BIT,
+        VK_FORMAT_FEATURE_BLIT_DST_BIT,
+        // 1.1                  
+        VK_FORMAT_FEATURE_TRANSFER_SRC_BIT,
+        VK_FORMAT_FEATURE_TRANSFER_DST_BIT,
+        VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT,
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT,
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT,
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT,
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT,
+        VK_FORMAT_FEATURE_DISJOINT_BIT,
+        VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT,
+        // EXT
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT,
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG
+    };
 
-        uint32_t i = 1;
-        for (auto& featureFlag : featureFlags)
-        {
-            rowItems << new QStandardItem((featureFlag != 0) ? "true" : "false");
-            rowItems[i]->setForeground((featureFlag != 0) ? QColor::fromRgb(0, 128, 0) : QColor::fromRgb(255, 0, 0));
-            ++i;
-        }
+    // @todo: extensions
 
-        rootItem->appendRow(rowItems);
-
-        struct featureSet {
-            std::string name;
-            VkFlags flags;
-        };
-        std::vector<featureSet> featureSets =
-        {
-            { "Linear tiling flags", format.properties.linearTilingFeatures },
-            { "Optimal tiling flags", format.properties.optimalTilingFeatures },
-            { "Buffer features flags", format.properties.bufferFeatures }
-        };
-
-        if (format.supported)
-        {
-            for (auto& featureSet : featureSets)
-            {
-                QList<QStandardItem *> flagItems;
-                flagItems << new QStandardItem(QString::fromStdString(featureSet.name));
-
-                if (featureSet.flags == 0)
-                {
-                    QList<QStandardItem *> flagItem;
-                    flagItem << new QStandardItem("none");
-                    flagItems[0]->appendRow(flagItem);
-                }
-                else
-                {
-                #define ADD_FLAG(flag) \
-                    if (featureSet.flags & flag) \
-                    { \
-                        QList<QStandardItem *> flagItem; \
-                        QString flagname(#flag); \
-                        flagname = flagname.replace("VK_FORMAT_FEATURE_", ""); \
-                        flagItem << new QStandardItem(flagname); \
-                        flagItems[0]->appendRow(flagItem); \
-                    }
-
-                    // Core
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_BLIT_SRC_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_BLIT_DST_BIT)
-                    // 1.1
-                    ADD_FLAG(VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_TRANSFER_DST_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_DISJOINT_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)
-
-                    // EXT
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
-                    ADD_FLAG(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG)
-                }
-
-                rowItems[0]->appendRow(flagItems);
-
-            }
-        }
-    }
-
+    QStandardItem* rootItem;
+    models.linearFormats.clear();
+    models.optimalFormats.clear();
+    models.bufferFormats.clear();
+    
+    ui.treeViewLinearFormats->setHeaderHidden(false);
+    ui.treeViewOptimalFormats->setHeaderHidden(false);
+    ui.treeViewBufferFormats->setHeaderHidden(false);
     QStringList formatHeaders;
-    formatHeaders << "Format" << "Linear" << "Optimal" << "Buffer";
-    models.formats.setHorizontalHeaderLabels(formatHeaders);
-
-    ui.treeViewFormats->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    for (int32_t i = 1; i < models.formats.columnCount(); ++i)
-    {
-        ui.treeViewFormats->header()->setSectionResizeMode(i, QHeaderView::Fixed);
+    formatHeaders << "Format";// << "SAMPLED_IMAGE" << "STORAGE_IMAGE_ATOMIC" << "COLOR_ATTACHMENT" << "COLOR_ATTACHMENT_BLEND" << "DEPTH_STENCIL_ATTACHMENT" << "BLIT_SRC" << "BLIT_DST" << "SAMPLED_IMAGE_FILTER_LINEAR" << "TRANSFER_SRC" << "TRANSFER_DST";
+    for (auto format : imageFormats) {
+        formatHeaders << vulkanResources::formatFeatureString(format);
     }
-    ui.treeViewFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
+
+    models.linearFormats.setHorizontalHeaderLabels(formatHeaders);
+    models.optimalFormats.setHorizontalHeaderLabels(formatHeaders);
+
+    formatHeaders.clear();
+    formatHeaders << "Format";
+    for (auto format : bufferFormats) {
+        formatHeaders << vulkanResources::formatFeatureString(format);
+    }
+
+    // << "UNIFORM_TEXEL_BUFFER" << "STORAGE_TEXEL_BUFFER" << "STORAGE_TEXEL_BUFFER_ATOMIC" << "VERTEX_BUFFER";
+    models.bufferFormats.setHorizontalHeaderLabels(formatHeaders);
+
+    auto addFormatRow = [bufferFormats, imageFormats](QStandardItem* rootItem, VulkanFormatInfo formatInfo, VkFormatFeatureFlags featureflags, bool image) {
+        QList<QStandardItem*> rowItems;
+        if (featureflags == 0) {
+            // @todo: hide or display?
+            // rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
+            // rowItems[0]->setForeground(QColor::fromRgb(128, 128, 128));
+        } else {
+            rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
+            if (image) {
+                for (auto flag : imageFormats) {
+                    if (featureflags & flag) {
+                        rowItems << new QStandardItem("Y");
+                        rowItems.last()->setForeground(QColor::fromRgb(0, 128, 0));
+                    } else {
+                        rowItems << new QStandardItem("N");
+                        rowItems.last()->setForeground(QColor::fromRgb(255, 0, 0));
+                    }
+                }
+            } else {
+                int idx = 0;
+                for (auto flag : bufferFormats) {
+                    if (featureflags & flag) {
+                        rowItems << new QStandardItem("Y");
+                        rowItems.last()->setForeground(QColor::fromRgb(0, 128, 0));
+                    } else {
+                        rowItems << new QStandardItem("N");
+                        rowItems.last()->setForeground(QColor::fromRgb(255, 0, 0));
+                    }
+                }
+            }
+            rootItem->appendRow(rowItems);
+        }
+    };
+
+    for (auto const& format : device->formats)
+    {
+        addFormatRow(models.linearFormats.invisibleRootItem(), format, format.properties.linearTilingFeatures, true);
+        addFormatRow(models.optimalFormats.invisibleRootItem(), format, format.properties.optimalTilingFeatures, true);
+        addFormatRow(models.bufferFormats.invisibleRootItem(), format, format.properties.bufferFeatures, false);
+    }
+
+    ui.treeViewLinearFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
+    ui.treeViewOptimalFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
+    ui.treeViewBufferFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
+
 }
 
 void VulkanCapsViewer::displayDeviceExtensions(VulkanDeviceInfo *device)

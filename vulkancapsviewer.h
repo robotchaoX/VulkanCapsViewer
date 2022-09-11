@@ -101,7 +101,9 @@ private:
         TreeProxyFilter featuresCore12;
         TreeProxyFilter featuresCore13;
         TreeProxyFilter featuresExtensions;
-        TreeProxyFilter formats;
+        TreeProxyFilter linearFormats;
+        TreeProxyFilter optimalFormats;
+        TreeProxyFilter bufferFormats;
         TreeProxyFilter extensions;
         TreeProxyFilter profiles;
     } filterProxies;
@@ -116,7 +118,9 @@ private:
         QStandardItemModel featuresCore12;
         QStandardItemModel featuresCore13;
         QStandardItemModel featuresExtensions;
-        QStandardItemModel formats;
+        QStandardItemModel linearFormats;
+        QStandardItemModel optimalFormats;
+        QStandardItemModel bufferFormats;
         QStandardItemModel extensions;
         QStandardItemModel profiles;
     } models;
@@ -161,7 +165,9 @@ private Q_SLOTS:
     void slotFilterFeaturesCore13(QString text);
     void slotFilterFeaturesExtensions(QString text);
     void slotFilterExtensions(QString text);
-    void slotFilterFormats(QString text);
+    void slotFilterLinearFormats(QString text);
+    void slotFilterOptimalFormats(QString text);
+    void slotFilterBufferFormats(QString text);
     void slotFilterProfiles(QString text);
     void slotComboTabChanged(int index);
 };
