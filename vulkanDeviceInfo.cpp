@@ -115,6 +115,10 @@ void VulkanDeviceInfo::readLayers()
 
 void VulkanDeviceInfo::readSupportedFormats()
 {
+    if ((vulkan_1_3()) || (extensionSupported(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME))) {
+        hasFormatProperties3 = true;
+    }
+
     assert(device != NULL);
     qInfo() << "Reading formats";
     // Base formats
@@ -124,6 +128,18 @@ void VulkanDeviceInfo::readSupportedFormats()
         VulkanFormatInfo formatInfo = {};
         formatInfo.format = (VkFormat)format;
         vkGetPhysicalDeviceFormatProperties(device, formatInfo.format, &formatInfo.properties);
+
+        // @todo
+        if ((vulkan_1_3()) || (extensionSupported(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME))) {
+            VkFormatProperties3 formatProperties3{};
+            formatProperties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            VkFormatProperties2 formatProperties2{};
+            formatProperties2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            formatProperties2.pNext = &formatProperties3;
+            vkGetPhysicalDeviceFormatProperties2(device, formatInfo.format, &formatProperties2);
+            formatInfo.properties3 = formatProperties3;
+        }
+
         formatInfo.supported = (formatInfo.properties.linearTilingFeatures != 0) || (formatInfo.properties.optimalTilingFeatures != 0) || (formatInfo.properties.bufferFeatures != 0);
         formats.push_back(formatInfo);
     }

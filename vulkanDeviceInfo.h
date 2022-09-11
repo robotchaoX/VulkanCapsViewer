@@ -105,6 +105,7 @@ public:
     QVariantMap core13Features;
     bool hasSubgroupProperties = false;
     bool hasFeaturModifyingTool = false;
+    bool hasFormatProperties3 = false;
     QVariantMap subgroupProperties;
     QVariantMap core11Properties;
     QVariantMap core12Properties;

@@ -1468,14 +1468,28 @@ void VulkanCapsViewer::displayOSInfo(VulkanDeviceInfo& device)
     }
 }
 
-void addFlagModelItem(QStandardItem *parent, QString flagName, bool flag)
+template<typename T1, typename T2>
+void addFormatRow(QStandardItem* rootItem, VulkanFormatInfo formatInfo, T1 featureflags, std::vector<T2> &formatList)
 {
-    if (flag)
-    {
-        QList<QStandardItem *> flagItems;
-        flagItems << new QStandardItem(flagName);
-        parent->appendRow(flagItems);
+    QList<QStandardItem*> rowItems;
+    if (featureflags == 0) {
+        // @todo: hide or display?
+        // rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
+        // rowItems[0]->setForeground(QColor::fromRgb(128, 128, 128));
+        return;
     }
+    rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
+    for (auto flag : formatList) {
+        if (featureflags & flag) {
+            rowItems << new QStandardItem(QChar(0x2713));
+            rowItems.last()->setForeground(QColor::fromRgb(0, 128, 0));
+        }
+        else {
+            rowItems << new QStandardItem(QChar(0x2717));
+            rowItems.last()->setForeground(QColor::fromRgb(255, 0, 0));
+        }
+    }
+    rootItem->appendRow(rowItems);
 }
 
 void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
@@ -1487,15 +1501,23 @@ void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
         VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
     };
 
+    std::vector<VkFormatFeatureFlags2> bufferFormats2 = {
+        VK_FORMAT_FEATURE_2_UNIFORM_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_BIT,
+        VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,
+        VK_FORMAT_FEATURE_2_VERTEX_BUFFER_BIT,
+        // 1.2/1.3
+        VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT,
+        // @todo: also for images
+        VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT,
+        VK_FORMAT_FEATURE_2_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR,
+    };
+
     std::vector<VkFormatFeatureFlags> imageFormats = {
         // Core
         VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
         VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
         VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,
-        VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
-        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,
-        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,
-        VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
         VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,
         VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -1516,6 +1538,31 @@ void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG
     };
 
+    std::vector<VkFormatFeatureFlags2> imageFormats2 = {
+        // Core
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
+        VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT,
+        VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT,
+        VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT,
+        VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT,
+        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_FORMAT_FEATURE_2_BLIT_SRC_BIT,
+        VK_FORMAT_FEATURE_2_BLIT_DST_BIT,
+        // 1.1
+        VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT,
+        VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT,
+        VK_FORMAT_FEATURE_2_MIDPOINT_CHROMA_SAMPLES_BIT,
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT,
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT,
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT,
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT,
+        VK_FORMAT_FEATURE_2_DISJOINT_BIT,
+        VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT,
+        // EXT
+        VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT,
+        //VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG
+    };
+
     // @todo: extensions
 
     QStandardItem* rootItem;
@@ -1523,13 +1570,16 @@ void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
     models.optimalFormats.clear();
     models.bufferFormats.clear();
     
-    ui.treeViewLinearFormats->setHeaderHidden(false);
-    ui.treeViewOptimalFormats->setHeaderHidden(false);
-    ui.treeViewBufferFormats->setHeaderHidden(false);
     QStringList formatHeaders;
-    formatHeaders << "Format";// << "SAMPLED_IMAGE" << "STORAGE_IMAGE_ATOMIC" << "COLOR_ATTACHMENT" << "COLOR_ATTACHMENT_BLEND" << "DEPTH_STENCIL_ATTACHMENT" << "BLIT_SRC" << "BLIT_DST" << "SAMPLED_IMAGE_FILTER_LINEAR" << "TRANSFER_SRC" << "TRANSFER_DST";
-    for (auto format : imageFormats) {
-        formatHeaders << vulkanResources::formatFeatureString(format);
+    formatHeaders << "Format";
+    if (device->hasFormatProperties3) {
+        for (auto format : imageFormats2) {
+            formatHeaders << vulkanResources::formatFeature2String(format);
+        }
+    } else {
+        for (auto format : imageFormats) {
+            formatHeaders << vulkanResources::formatFeatureString(format);
+        }
     }
 
     models.linearFormats.setHorizontalHeaderLabels(formatHeaders);
@@ -1537,58 +1587,34 @@ void VulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
 
     formatHeaders.clear();
     formatHeaders << "Format";
-    for (auto format : bufferFormats) {
-        formatHeaders << vulkanResources::formatFeatureString(format);
+    if (device->hasFormatProperties3) {
+        for (auto format : bufferFormats2) {
+            formatHeaders << vulkanResources::formatFeature2String(format);
+        }
+    } else {
+        for (auto format : bufferFormats) {
+            formatHeaders << vulkanResources::formatFeatureString(format);
+        }
     }
 
-    // << "UNIFORM_TEXEL_BUFFER" << "STORAGE_TEXEL_BUFFER" << "STORAGE_TEXEL_BUFFER_ATOMIC" << "VERTEX_BUFFER";
     models.bufferFormats.setHorizontalHeaderLabels(formatHeaders);
-
-    auto addFormatRow = [bufferFormats, imageFormats](QStandardItem* rootItem, VulkanFormatInfo formatInfo, VkFormatFeatureFlags featureflags, bool image) {
-        QList<QStandardItem*> rowItems;
-        if (featureflags == 0) {
-            // @todo: hide or display?
-            // rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
-            // rowItems[0]->setForeground(QColor::fromRgb(128, 128, 128));
-        } else {
-            rowItems << new QStandardItem(QString::fromStdString(vulkanResources::formatString(formatInfo.format)));
-            if (image) {
-                for (auto flag : imageFormats) {
-                    if (featureflags & flag) {
-                        rowItems << new QStandardItem("Y");
-                        rowItems.last()->setForeground(QColor::fromRgb(0, 128, 0));
-                    } else {
-                        rowItems << new QStandardItem("N");
-                        rowItems.last()->setForeground(QColor::fromRgb(255, 0, 0));
-                    }
-                }
-            } else {
-                int idx = 0;
-                for (auto flag : bufferFormats) {
-                    if (featureflags & flag) {
-                        rowItems << new QStandardItem("Y");
-                        rowItems.last()->setForeground(QColor::fromRgb(0, 128, 0));
-                    } else {
-                        rowItems << new QStandardItem("N");
-                        rowItems.last()->setForeground(QColor::fromRgb(255, 0, 0));
-                    }
-                }
-            }
-            rootItem->appendRow(rowItems);
-        }
-    };
 
     for (auto const& format : device->formats)
     {
-        addFormatRow(models.linearFormats.invisibleRootItem(), format, format.properties.linearTilingFeatures, true);
-        addFormatRow(models.optimalFormats.invisibleRootItem(), format, format.properties.optimalTilingFeatures, true);
-        addFormatRow(models.bufferFormats.invisibleRootItem(), format, format.properties.bufferFeatures, false);
+        if (device->hasFormatProperties3) {
+            addFormatRow(models.linearFormats.invisibleRootItem(), format, format.properties3.linearTilingFeatures, imageFormats2);
+            addFormatRow(models.optimalFormats.invisibleRootItem(), format, format.properties3.optimalTilingFeatures, imageFormats2);
+            addFormatRow(models.bufferFormats.invisibleRootItem(), format, format.properties3.bufferFeatures, bufferFormats2);
+        } else {
+            addFormatRow(models.linearFormats.invisibleRootItem(), format, format.properties.linearTilingFeatures, imageFormats);
+            addFormatRow(models.optimalFormats.invisibleRootItem(), format, format.properties.optimalTilingFeatures, imageFormats);
+            addFormatRow(models.bufferFormats.invisibleRootItem(), format, format.properties.bufferFeatures, bufferFormats);
+        }
     }
 
     ui.treeViewLinearFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
     ui.treeViewOptimalFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
     ui.treeViewBufferFormats->sortByColumn(0, Qt::SortOrder::AscendingOrder);
-
 }
 
 void VulkanCapsViewer::displayDeviceExtensions(VulkanDeviceInfo *device)

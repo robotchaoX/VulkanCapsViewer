@@ -13,7 +13,6 @@
   <property name="font">
    <font>
     <pointsize>12</pointsize>
-    <weight>50</weight>
     <italic>false</italic>
     <bold>false</bold>
    </font>
@@ -102,9 +101,7 @@ QTreeView {
   <widget class="QWidget" name="centralWidget">
    <property name="font">
     <font>
-     <family>MS Shell Dlg 2</family>
      <pointsize>12</pointsize>
-     <weight>50</weight>
      <italic>false</italic>
      <bold>false</bold>
     </font>
@@ -580,7 +577,7 @@ height: 24px;
           <enum>QTabWidget::Rounded</enum>
          </property>
          <property name="currentIndex">
-          <number>3</number>
+          <number>0</number>
          </property>
          <property name="documentMode">
           <bool>false</bool>
@@ -1395,8 +1392,11 @@ height: 24px;
                  <property name="alternatingRowColors">
                   <bool>true</bool>
                  </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
                  <attribute name="headerVisible">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </attribute>
                  <attribute name="headerMinimumSectionSize">
                   <number>200</number>
@@ -1456,8 +1456,11 @@ height: 24px;
                  <property name="alternatingRowColors">
                   <bool>true</bool>
                  </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
                  <attribute name="headerVisible">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </attribute>
                  <attribute name="headerMinimumSectionSize">
                   <number>200</number>
@@ -1517,8 +1520,11 @@ height: 24px;
                  <property name="alternatingRowColors">
                   <bool>true</bool>
                  </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
                  <attribute name="headerVisible">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </attribute>
                  <attribute name="headerMinimumSectionSize">
                   <number>200</number>
