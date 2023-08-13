@@ -22,92 +22,48 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cassert>
-#include <cstdint>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include <QString>
 #include <QSet>
 #include "vulkan/vulkan.h"
 
 namespace vulkanResources {
 	template<typename Number>
-	inline std::string toHexString(const Number number)
+	inline QString toHexString(const Number number)
 	{
-		std::stringstream ss;
-		ss << std::hex << std::showbase << number;
-		return ss.str();
+		return "0x" + QString::number(number, 16);
 	}
 
-	inline std::string toHexString(const uint8_t number)
+	inline QString versionToString(const uint32_t version)
 	{
-		return toHexString(static_cast<unsigned>(number));
+		return QString().sprintf("%d.%d.%d", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version), VK_VERSION_PATCH(version));
 	}
 
-	inline std::string toHexString(const int8_t number)
+	inline const QString revisionToString(const uint32_t revision)
 	{
-		return toHexString(static_cast<int>(number));
-	}
-
-	template<typename Number>
-	inline QString toHexQString(const Number number)
-	{
-		return QString::fromStdString(toHexString(number));
-	}
-
-	inline std::string toStringList(const VkSampleCountFlags samples)
-	{
-		assert(samples <= 0x7F);
-
-		if (samples == 0) return "none";
-
-		std::string sampleList = "[";
-		bool first = true;
-		for (uint32_t sample = 1; sample != 0; sample <<= 1) {
-			if (samples & sample) {
-				if (first) first = false; else sampleList += ", ";
-				sampleList += std::to_string(sample);
-			}
-		}
-		sampleList += "]";
-
-		return sampleList;
-	}
-
-	inline QString toQStringList(const VkSampleCountFlags samples)
-	{
-		return QString::fromStdString(toStringList(samples));
-	}
-
-	inline const std::string versionToString(const uint32_t version)
-	{
-		std::stringstream ss;
-		ss << VK_VERSION_MAJOR(version) << "." << VK_VERSION_MINOR(version) << "." << VK_VERSION_PATCH(version);
-		return ss.str();
-	}
-
-	inline const std::string revisionToString(const uint32_t revision)
-	{
-		return "r. " + std::to_string(revision);
+		return "r. " + QString::number(revision);
 	}
 
 	template<typename Size>
-	inline const std::string arraySizeToString(const Size size)
+	inline const QString arraySizeToString(const Size size)
 	{
-		return "[" + std::to_string(size) + "]";
+		return "[" + QString::number(size) + "]";
 	}
 
-	template<typename Index>
-	inline const std::string arrayIndexToString(const Index i)
+	inline QString sampleCountFlagStrings(const VkSampleCountFlags samples)
 	{
-		return "[" + std::to_string(i) + "]";
+		if (samples == 0) {
+			return "none";
+		}
+		QStringList sampleList{};
+		for (uint32_t sample = 1; sample != 0; sample <<= 1) {
+			if (samples & sample) {
+				sampleList << QString::number(sample);
+			}
+		}
+		return "[" + sampleList.join(", ") + "]";
 	}
 
-	inline std::string physicalDeviceTypeString(const VkPhysicalDeviceType type)
+	inline QString physicalDeviceTypeString(const VkPhysicalDeviceType type)
 	{
 		switch (type)
 		{
@@ -122,7 +78,7 @@ namespace vulkanResources {
 		}
 	}
 
-	inline std::string resultString(const VkResult result)
+	inline QString resultString(const VkResult result)
 	{
 		switch (result)
 		{
@@ -164,7 +120,7 @@ namespace vulkanResources {
 		}
 	}
 
-	inline std::string formatString(const VkFormat format)
+	inline QString formatString(const VkFormat format)
 	{
 		switch (format)
 		{
@@ -401,11 +357,6 @@ namespace vulkanResources {
 		}
 	}
 
-	inline QString formatQString(const VkFormat format)
-	{
-		return QString::fromStdString(formatString(format));
-	}
-
 	inline QString imageLayoutString(const VkImageLayout imageLayout)
 	{
 		switch (imageLayout)
@@ -446,11 +397,11 @@ namespace vulkanResources {
 #endif
 			STR(ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT);
 #undef STR
-		default: return QString::fromStdString("UNKNOWN_ENUM (" + toHexString(imageLayout) + ")");
+		default: return "UNKNOWN_ENUM (" + toHexString(imageLayout) + ")";
 		}
 	}
 
-	inline std::string presentModeKHRString(const VkPresentModeKHR presentMode)
+	inline QString presentModeKHRString(const VkPresentModeKHR presentMode)
 	{
 		switch (presentMode)
 		{
@@ -466,7 +417,7 @@ namespace vulkanResources {
 		}
 	}
 
-	inline std::string colorSpaceKHRString(const VkColorSpaceKHR colorSpace)
+	inline QString colorSpaceKHRString(const VkColorSpaceKHR colorSpace)
 	{
 		switch (colorSpace)
 		{
@@ -492,7 +443,7 @@ namespace vulkanResources {
 		}
 	}
 
-	inline std::string driverIdKHRString(const VkDriverIdKHR driverId)
+	inline QString driverIdKHRString(const VkDriverIdKHR driverId)
 	{
 		switch (driverId) {
 #define STR(r) case VK_DRIVER_ID_##r##_KHR: return #r
@@ -513,7 +464,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string imageUsageBitString(const VkImageUsageFlagBits usageBit)
+	inline QString imageUsageBitString(const VkImageUsageFlagBits usageBit)
 	{
 		switch (usageBit) {
 #define STR(r) case VK_IMAGE_USAGE_##r: return #r
@@ -532,7 +483,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string surfaceTransformBitString(const VkSurfaceTransformFlagBitsKHR transformBit)
+	inline QString surfaceTransformBitString(const VkSurfaceTransformFlagBitsKHR transformBit)
 	{
 		switch (transformBit) {
 #define STR(r) case VK_SURFACE_TRANSFORM_##r##_KHR: return #r
@@ -550,7 +501,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string compositeAlphaBitString(const VkCompositeAlphaFlagBitsKHR alphaBit)
+	inline QString compositeAlphaBitString(const VkCompositeAlphaFlagBitsKHR alphaBit)
 	{
 		switch (alphaBit) {
 #define STR(r) case VK_COMPOSITE_ALPHA_##r##_KHR: return #r
@@ -563,7 +514,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string memoryPropBitString(const VkMemoryPropertyFlagBits memoryPropBit)
+	inline QString memoryPropBitString(const VkMemoryPropertyFlagBits memoryPropBit)
 	{
 		switch (memoryPropBit) {
 #define STR(r) case VK_MEMORY_PROPERTY_##r: return #r
@@ -580,7 +531,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string memoryHeapBitString(const VkMemoryHeapFlagBits heapBit)
+	inline QString memoryHeapBitString(const VkMemoryHeapFlagBits heapBit)
 	{
 		switch (heapBit) {
 #define STR(r) case VK_MEMORY_HEAP_##r: return #r
@@ -591,7 +542,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string queueBitString(const VkQueueFlagBits queueBit)
+	inline QString queueBitString(const VkQueueFlagBits queueBit)
 	{
 		switch (queueBit) {
 #define STR(r) case VK_QUEUE_##r: return #r
@@ -608,7 +559,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string subgroupFeatureBitString(const VkSubgroupFeatureFlagBits subgroupBit)
+	inline QString subgroupFeatureBitString(const VkSubgroupFeatureFlagBits subgroupBit)
 	{
 		switch (subgroupBit) {
 #define STR(r) case VK_SUBGROUP_FEATURE_##r: return #r
@@ -626,7 +577,7 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string shaderStagesBitString(const VkShaderStageFlagBits stageBit)
+	inline QString shaderStagesBitString(const VkShaderStageFlagBits stageBit)
 	{
 		switch (stageBit) {
 #define STR(r) case VK_SHADER_STAGE_##r: return #r
@@ -651,29 +602,9 @@ namespace vulkanResources {
 		};
 	}
 
-	inline std::string joinString(const char separator, const std::vector<std::string>& stringList)
+	inline QString conformanceVersionKHRString(const VkConformanceVersionKHR& conformanceVersion)
 	{
-		std::stringstream ss;
-		bool first = true;
-		for (const auto& s : stringList) {
-			if (!first) ss << separator;
-			first = false;
-			ss << s;
-		}
-
-		return ss.str();
-	}
-
-	inline std::string conformanceVersionKHRString(const VkConformanceVersionKHR& conformanceVersion)
-	{
-		const std::vector<uint8_t> versionAsList = { conformanceVersion.major, conformanceVersion.minor, conformanceVersion.subminor, conformanceVersion.patch };
-		std::vector<std::string> versionAsStringList;
-		const auto u8ToString = [](const uint8_t num) {
-			return std::to_string(static_cast<unsigned>(num));
-		};
-		std::transform(versionAsList.begin(), versionAsList.end(), std::back_inserter(versionAsStringList), u8ToString);
-
-		return joinString('.', versionAsStringList);
+		return QString().sprintf("%d.%d.%d.%d", conformanceVersion.major, conformanceVersion.minor, conformanceVersion.subminor, conformanceVersion.patch);
 	}
 
 	// Values to be displayed as sample counts

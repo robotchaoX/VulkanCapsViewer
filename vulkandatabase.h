@@ -4,7 +4,7 @@
 *
 * Database communication class implementation
 *
-* Copyright (C) 2016-2020 by Sascha Willems (www.saschawillems.de)
+* Copyright (C) 2016-2023 by Sascha Willems (www.saschawillems.de)
 *
 * This code is free software, you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -41,12 +41,13 @@ class VulkanDatabase :
 private:
 	QNetworkProxy *proxy;
 	QNetworkAccessManager *manager;
-	string httpGet(string url);
-	string encodeUrl(string url);
+	QString httpGet(QString url);
+	QString encodeUrl(QString url);
 public:
     static QString username;
     static QString password;
     static QString databaseUrl;
+	static QString databaseUrlSecure;
     int getReportId(VulkanDeviceInfo device);
     bool checkReportPresent(VulkanDeviceInfo device, int &reportId);
 	bool checkCanUpdateReport(VulkanDeviceInfo &device, int reportId);

@@ -4,7 +4,7 @@
 *
 * Device information class
 *
-* Copyright (C) 2016-2022 by Sascha Willems (www.saschawillems.de)
+* Copyright (C) 2016-2023 by Sascha Willems (www.saschawillems.de)
 *
 * This code is free software, you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -157,7 +157,7 @@ void VulkanDeviceInfo::readQueueFamilies()
     }
 }
 
-std::string VulkanDeviceInfo::getDriverVersion()
+QString VulkanDeviceInfo::getDriverVersion()
 {
     // NVIDIA
     if (props.vendorID == 4318)
@@ -172,7 +172,7 @@ std::string VulkanDeviceInfo::getDriverVersion()
         uint32_t secondaryBranch = (props.driverVersion >> 6) & 0x0ff;
         uint32_t tertiaryBranch = (props.driverVersion) & 0x003f;
 
-        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(secondaryBranch) + "." + std::to_string(tertiaryBranch);
+        return QString().sprintf("%d.%d.%d.%d", major, minor, secondaryBranch, tertiaryBranch);
     }
     else
     {
@@ -209,14 +209,14 @@ void VulkanDeviceInfo::readPhysicalProperties()
     properties.clear();
     properties["deviceName"] = props.deviceName;
     properties["driverVersion"] = props.driverVersion;
-    properties["driverVersionText"] = QString::fromStdString(getDriverVersion());
+    properties["driverVersionText"] = getDriverVersion();
     properties["apiVersion"] = props.apiVersion;
-    properties["apiVersionText"] = QString::fromStdString(vulkanResources::versionToString(props.apiVersion));
+    properties["apiVersionText"] =vulkanResources::versionToString(props.apiVersion);
     properties["headerversion"] = VK_HEADER_VERSION;
     properties["vendorID"] = props.vendorID;
     properties["deviceID"] = props.deviceID;
     properties["deviceType"] = props.deviceType;
-    properties["deviceTypeText"] = QString::fromStdString(vulkanResources::physicalDeviceTypeString(props.deviceType));
+    properties["deviceTypeText"] = vulkanResources::physicalDeviceTypeString(props.deviceType);
 
     // Sparse residency properties
     sparseProperties.clear();
@@ -305,7 +305,7 @@ void VulkanDeviceInfo::readPhysicalProperties()
             core12Properties["driverID"] = coreProps12.driverID;
             core12Properties["driverName"] = QString(coreProps12.driverName);
             core12Properties["driverInfo"] = QString(coreProps12.driverInfo);
-            core12Properties["conformanceVersion"] =  QString::fromStdString(vulkanResources::conformanceVersionKHRString(coreProps12.conformanceVersion));
+            core12Properties["conformanceVersion"] =  vulkanResources::conformanceVersionKHRString(coreProps12.conformanceVersion);
             core12Properties["denormBehaviorIndependence"] = coreProps12.denormBehaviorIndependence;
             core12Properties["roundingModeIndependence"] = coreProps12.roundingModeIndependence;
             core12Properties["shaderSignedZeroInfNanPreserveFloat16"] = coreProps12.shaderSignedZeroInfNanPreserveFloat16;
@@ -628,7 +628,6 @@ void VulkanDeviceInfo::readPhysicalFeatures()
 void VulkanDeviceInfo::readPhysicalLimits()
 {
     qInfo() << "Reading limits";
-    using vulkanResources::toHexQString;
 
     limits.clear();
     limits["maxImageDimension1D"] = props.limits.maxImageDimension1D;
@@ -642,8 +641,8 @@ void VulkanDeviceInfo::readPhysicalLimits()
     limits["maxPushConstantsSize"] = props.limits.maxPushConstantsSize;
     limits["maxMemoryAllocationCount"] = props.limits.maxMemoryAllocationCount;
     limits["maxSamplerAllocationCount"] = props.limits.maxSamplerAllocationCount;
-    limits["bufferImageGranularity"] = toHexQString(props.limits.bufferImageGranularity);
-    limits["sparseAddressSpaceSize"] = toHexQString(props.limits.sparseAddressSpaceSize);
+    limits["bufferImageGranularity"] = vulkanResources::toHexString(props.limits.bufferImageGranularity);
+    limits["sparseAddressSpaceSize"] = vulkanResources::toHexString(props.limits.sparseAddressSpaceSize);
     limits["maxBoundDescriptorSets"] = props.limits.maxBoundDescriptorSets;
     limits["maxPerStageDescriptorSamplers"] = props.limits.maxPerStageDescriptorSamplers;
     limits["maxPerStageDescriptorUniformBuffers"] = props.limits.maxPerStageDescriptorUniformBuffers;
@@ -697,10 +696,10 @@ void VulkanDeviceInfo::readPhysicalLimits()
     limits["maxViewportDimensions"] = QVariant::fromValue(QVariantList({ props.limits.maxViewportDimensions[0], props.limits.maxViewportDimensions[1] }));
     limits["viewportBoundsRange"] = QVariant::fromValue(QVariantList({ props.limits.viewportBoundsRange[0], props.limits.viewportBoundsRange[1] }));
     limits["viewportSubPixelBits"] = props.limits.viewportSubPixelBits;
-    limits["minMemoryMapAlignment"] = toHexQString(props.limits.minMemoryMapAlignment);
-    limits["minTexelBufferOffsetAlignment"] = toHexQString(props.limits.minTexelBufferOffsetAlignment);
-    limits["minUniformBufferOffsetAlignment"] = toHexQString(props.limits.minUniformBufferOffsetAlignment);
-    limits["minStorageBufferOffsetAlignment"] = toHexQString(props.limits.minStorageBufferOffsetAlignment);
+    limits["minMemoryMapAlignment"] = vulkanResources::toHexString(props.limits.minMemoryMapAlignment);
+    limits["minTexelBufferOffsetAlignment"] = vulkanResources::toHexString(props.limits.minTexelBufferOffsetAlignment);
+    limits["minUniformBufferOffsetAlignment"] = vulkanResources::toHexString(props.limits.minUniformBufferOffsetAlignment);
+    limits["minStorageBufferOffsetAlignment"] = vulkanResources::toHexString(props.limits.minStorageBufferOffsetAlignment);
     limits["minTexelOffset"] = props.limits.minTexelOffset;
     limits["maxTexelOffset"] = props.limits.maxTexelOffset;
     limits["minTexelGatherOffset"] = props.limits.minTexelGatherOffset;
@@ -734,9 +733,9 @@ void VulkanDeviceInfo::readPhysicalLimits()
     limits["lineWidthGranularity"] = props.limits.lineWidthGranularity;
     limits["strictLines"] = props.limits.strictLines;
     limits["standardSampleLocations"] = props.limits.standardSampleLocations;
-    limits["optimalBufferCopyOffsetAlignment"] = toHexQString(props.limits.optimalBufferCopyOffsetAlignment);
-    limits["optimalBufferCopyRowPitchAlignment"] = toHexQString(props.limits.optimalBufferCopyRowPitchAlignment);
-    limits["nonCoherentAtomSize"] = toHexQString(props.limits.nonCoherentAtomSize);
+    limits["optimalBufferCopyOffsetAlignment"] = vulkanResources::toHexString(props.limits.optimalBufferCopyOffsetAlignment);
+    limits["optimalBufferCopyRowPitchAlignment"] = vulkanResources::toHexString(props.limits.optimalBufferCopyRowPitchAlignment);
+    limits["nonCoherentAtomSize"] = vulkanResources::toHexString(props.limits.nonCoherentAtomSize);
 }
 
 void VulkanDeviceInfo::readPhysicalMemoryProperties()
@@ -1020,9 +1019,9 @@ QJsonObject VulkanDeviceInfo::toJson(QString submitter, QString comment)
 
     // Environment
     QJsonObject jsonEnv;
-    jsonEnv["name"] = QString::fromStdString(os.name);
-    jsonEnv["version"] = QString::fromStdString(os.version);
-    jsonEnv["architecture"] = QString::fromStdString(os.architecture);
+    jsonEnv["name"] = os.name;
+    jsonEnv["version"] = os.version;
+    jsonEnv["architecture"] = os.architecture;
     jsonEnv["submitter"] = submitter;
     jsonEnv["comment"] = comment;
     jsonEnv["reportversion"] = reportVersion;

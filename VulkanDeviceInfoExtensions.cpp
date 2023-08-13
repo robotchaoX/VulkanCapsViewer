@@ -608,7 +608,7 @@ void VulkanDeviceInfoExtensions::readPhysicalProperties_KHR() {
 		pushProperty2(extension, "driverID", QVariant(extProps.driverID));
 		pushProperty2(extension, "driverName", QVariant(extProps.driverName));
 		pushProperty2(extension, "driverInfo", QVariant(extProps.driverInfo));
-		pushProperty2(extension, "conformanceVersion", QString::fromStdString(vulkanResources::conformanceVersionKHRString(extProps.conformanceVersion)));
+		pushProperty2(extension, "conformanceVersion", vulkanResources::conformanceVersionKHRString(extProps.conformanceVersion));
 	}
 	if (extensionSupported("VK_KHR_shader_float_controls")) {
 		const char* extension("VK_KHR_shader_float_controls");

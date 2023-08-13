@@ -4,7 +4,7 @@
 *
 * Device information class
 *
-* Copyright (C) 2016-2022 by Sascha Willems (www.saschawillems.de)
+* Copyright (C) 2016-2023 by Sascha Willems (www.saschawillems.de)
 *
 * This code is free software, you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -60,9 +60,9 @@
 
 struct OSInfo
 {
-    std::string name;
-    std::string version;
-    std::string architecture;
+    QString name;
+    QString version;
+    QString architecture;
 };
 
 struct VulkanQueueFamilyInfo
@@ -115,7 +115,7 @@ public:
     QString appVersion;
     QString reportVersion;
     std::vector<VulkanLayerInfo> getLayers();
-    std::string getDriverVersion();
+    QString getDriverVersion();
     void readExtensions();
     void readLayers();
     void readSupportedFormats();
