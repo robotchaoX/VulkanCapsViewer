@@ -909,6 +909,26 @@ void VulkanDeviceInfoExtensions::readPhysicalProperties_KHR() {
 		vulkanContext.vkGetPhysicalDeviceProperties2KHR(device, &deviceProps2);
 		pushProperty2(extension, "cooperativeMatrixSupportedStages", QVariant(extProps->cooperativeMatrixSupportedStages));
 		delete extProps;
+		// @todo: work-in-progress
+		auto vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR>(vkGetInstanceProcAddr(vulkanContext.instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR"));
+		uint32_t count{ 0 };
+		vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &count, nullptr);
+		std::vector<VkCooperativeMatrixPropertiesKHR> props(count);
+		vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &count, props.data());
+		QVariantList qvl{};
+		for (auto& prop : props) {
+			QVariantMap qvm{};
+			qvm["MSize"] = prop.MSize;
+			qvm["NSize"] = prop.NSize;
+			qvm["KSize"] = prop.KSize;
+			qvm["AType"] = prop.AType;
+			qvm["BType"] = prop.BType;
+			qvm["CType"] = prop.CType;
+			qvm["saturatingAccumulation"] = prop.saturatingAccumulation;
+			qvm["scope"] = prop.scope;
+			qvl.push_back(qvm);
+		}
+		pushProperty2(extension, "cooperativeMatrixProperties", qvl);
 	}
 	if (extensionSupported("VK_KHR_vertex_attribute_divisor")) {
 		const char* extension("VK_KHR_vertex_attribute_divisor");

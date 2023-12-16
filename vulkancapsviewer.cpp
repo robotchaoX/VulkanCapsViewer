@@ -1161,6 +1161,13 @@ void addPropertiesRow(QStandardItem* parent, const QVariantMap::const_iterator& 
     parent->appendRow(item);
 }
 
+void addCaptionedRow(QStandardItem* parent, QString caption, QString value) {
+    QList<QStandardItem*> item;
+    item << new QStandardItem(caption);
+    item << new QStandardItem(value);
+    parent->appendRow(item);
+}
+
 void addExtensionPropertiesRow(QList<QStandardItem*> item, Property2 property)
 {
     QList<QStandardItem*> propertyItem;
@@ -1180,6 +1187,7 @@ void addExtensionPropertiesRow(QList<QStandardItem*> item, Property2 property)
     }
 
     if (property.value.canConvert(QVariant::List)) {
+        bool displayRawValue{ true };
         if ((strcmp(property.extension, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME) == 0) && ((property.name == "pCopySrcLayouts") || (property.name == "pCopyDstLayouts"))) {
             QList<QVariant> list = property.value.toList();
             for (auto i = 0; i < list.size(); i++) {
@@ -1188,7 +1196,27 @@ void addExtensionPropertiesRow(QList<QStandardItem*> item, Property2 property)
                 propertyItem.first()->appendRow(formatItem);
             }
         }
-        propertyItem << new QStandardItem(arrayToStr(property.value));
+        if ((strcmp(property.extension, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME) == 0) && (property.name == "cooperativeMatrixProperties")) {
+            QList<QVariant> list = property.value.toList();
+            for (auto i = 0; i < list.size(); i++) {
+                QStandardItem* entryItem = new QStandardItem();
+                QVariantMap value = list[i].toMap();
+                entryItem->setText("[" + QString::number(i) + "]");
+                addCaptionedRow(entryItem, "MSize", value["MSize"].toString());
+                addCaptionedRow(entryItem, "NSize", value["NSize"].toString());
+                addCaptionedRow(entryItem, "KSize", value["KSize"].toString());
+                addCaptionedRow(entryItem, "AType", vulkanResources::VkComponentTypeKHRString((VkComponentTypeKHR)value["AType"].toInt()));
+                addCaptionedRow(entryItem, "BType", vulkanResources::VkComponentTypeKHRString((VkComponentTypeKHR)value["BType"].toInt()));
+                addCaptionedRow(entryItem, "CType", vulkanResources::VkComponentTypeKHRString((VkComponentTypeKHR)value["CType"].toInt()));
+                addCaptionedRow(entryItem, "saturatingAccumulation", value["saturatingAccumulation"].toString()); // @todo: boolean
+                addCaptionedRow(entryItem, "scope", vulkanResources::VkScopeKHRString((VkScopeKHR)value["scope"].toInt()));
+                propertyItem.first()->appendRow(entryItem);
+            }
+            displayRawValue = false;
+        }
+        if (displayRawValue) {
+            propertyItem << new QStandardItem(arrayToStr(property.value));
+        }
     }
     else {
         switch (property.value.type()) {
